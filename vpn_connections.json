@@ -1,0 +1,22 @@
+[
+  {
+    "id": "a0d9e2c3-ee36-4cc6-9883-1f662996eaac",
+    "name": "Sheberghan-PPTP",
+    "protocol": "pptp",
+    "server": "149.54.35.198",
+    "username": "hasib",
+    "password": "hasib123",
+    "psk": null,
+    "networks": ""
+  },
+  {
+    "id": "0bb13eda-8cd7-4817-8b4b-4fb5fc46b428",
+    "name": "Mazar-PPTP",
+    "protocol": "pptp",
+    "server": "149.54.35.166",
+    "username": "hasib",
+    "password": "hasib123",
+    "psk": null,
+    "networks": "10.20.1.0/24, 10.20.2.0/24, 10.100.0.0/16"
+  }
+]

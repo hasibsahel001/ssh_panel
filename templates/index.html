@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MikroTik Control Panel</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+
+<div class="grid-bg"></div>
+
+<header class="topbar">
+  <div class="brand">
+    <span class="brand-mark">MT</span>
+    <div class="brand-text">
+      <h1>MikroTik Control Panel</h1>
+      <p>Connect to and run commands on RouterOS devices</p>
+    </div>
+  </div>
+  <div class="topbar-right">
+    <span class="dev-credit">Developed By <strong>Hasib Sahel</strong></span>
+    <div id="clock" class="clock">--:--:--</div>
+    <button id="theme-toggle" class="theme-toggle" type="button" title="Switch theme">
+      <span id="theme-icon">☾</span>
+    </button>
+  </div>
+</header>
+
+<div class="toolbar">
+  <button id="ping-trigger-btn" class="toolbar-btn" type="button">
+    <span class="toolbar-btn-icon">📡</span> Ping Device
+  </button>
+  <button id="vpn-trigger-btn" class="toolbar-btn" type="button">
+    <span class="toolbar-btn-icon">🔒</span> VPN Tunnel
+  </button>
+</div>
+
+<main class="layout">
+
+  <!-- Config column -->
+  <section class="panel config-panel">
+    <div class="panel-head">
+      <span class="dot"></span>
+      <h2>Connection Settings</h2>
+    </div>
+
+    <div class="mode-switch">
+      <button type="button" class="mode-btn active" data-mode="single">Single IP</button>
+      <button type="button" class="mode-btn" data-mode="range">Multiple IPs (range)</button>
+    </div>
+
+    <div id="mode-single" class="mode-fields">
+      <label class="field">
+        <span>Device IP</span>
+        <input type="text" id="single-ip" placeholder="192.168.88.1" autocomplete="off">
+      </label>
+    </div>
+
+    <div id="mode-range" class="mode-fields hidden">
+      <div class="field-row">
+        <label class="field">
+          <span>Start IP</span>
+          <input type="text" id="start-ip" placeholder="192.168.88.1" autocomplete="off">
+        </label>
+        <label class="field">
+          <span>End IP</span>
+          <input type="text" id="end-ip" placeholder="192.168.88.20" autocomplete="off">
+        </label>
+      </div>
+      <p class="hint">Commands run in parallel on every IP in this range.</p>
+    </div>
+
+    <div class="field-row">
+      <label class="field">
+        <span>SSH Port</span>
+        <input type="text" id="port" value="2288" inputmode="numeric" autocomplete="off">
+      </label>
+      <label class="field">
+        <span>Username</span>
+        <input type="text" id="username" placeholder="admin" autocomplete="off">
+      </label>
+    </div>
+
+    <label class="field">
+      <span>Password</span>
+      <div class="pw-wrap">
+        <input type="password" id="password" placeholder="••••••••" autocomplete="off">
+        <button type="button" id="toggle-pw" class="pw-toggle" title="Show password">👁</button>
+      </div>
+    </label>
+
+    <label class="field">
+      <span>Commands (one per line)</span>
+      <textarea id="commands" rows="7" placeholder="/system identity print&#10;/ip address print&#10;/interface print"></textarea>
+    </label>
+
+    <button id="run-btn" class="run-btn">
+      <span class="run-btn-icon">▶</span>
+      <span class="run-btn-text">Run Commands</span>
+    </button>
+
+    <p id="status-msg" class="status-msg"></p>
+  </section>
+
+  <!-- Results column -->
+  <section class="panel results-panel">
+    <div class="panel-head results-head">
+      <div class="results-title">
+        <span class="dot"></span>
+        <h2>Execution Output</h2>
+      </div>
+      <div class="export-actions hidden" id="export-actions">
+        <button class="export-btn" data-type="csv">CSV ⭳</button>
+        <button class="export-btn" data-type="xlsx">Excel ⭳</button>
+        <button class="export-btn" data-type="txt">TXT ⭳</button>
+      </div>
+    </div>
+
+    <div id="summary-bar" class="summary-bar hidden">
+      <div class="summary-chip total"><b id="sum-total">0</b><span>Total</span></div>
+      <div class="summary-chip ok"><b id="sum-ok">0</b><span>Success</span></div>
+      <div class="summary-chip fail"><b id="sum-fail">0</b><span>Failed</span></div>
+      <div class="summary-time" id="sum-time"></div>
+    </div>
+
+    <div id="device-grid" class="device-grid"></div>
+
+    <div id="empty-state" class="empty-state">
+      <div class="empty-icon">◌</div>
+      <p>No commands have been run yet.</p>
+      <p class="empty-sub">Fill in the connection details on the left and click "Run Commands".</p>
+    </div>
+  </section>
+
+</main>
+
+<!-- Ping modal -->
+<div id="ping-modal" class="modal hidden">
+  <div class="modal-box modal-box-form">
+    <div class="modal-head">
+      <span class="modal-title">📡 Ping Device</span>
+      <button id="ping-modal-close" class="modal-close">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="field-row">
+        <label class="field">
+          <span>Target IP</span>
+          <input type="text" id="ping-ip" placeholder="192.168.88.1">
+        </label>
+        <label class="field">
+          <span>Count</span>
+          <input type="text" id="ping-count" value="10" inputmode="numeric">
+        </label>
+      </div>
+
+      <button id="ping-start-btn" class="run-btn secondary-btn" type="button">
+        <span class="run-btn-icon">⇡</span>
+        <span class="run-btn-text">Start Ping</span>
+      </button>
+
+      <div id="ping-results" class="ping-results"></div>
+      <div id="ping-summary" class="ping-summary hidden"></div>
+
+      <button id="ping-clear-btn" class="run-btn secondary-btn ghost-btn" type="button">
+        Close &amp; Clear Results
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- VPN tunnel modal -->
+<div id="vpn-modal" class="modal hidden">
+  <div class="modal-box modal-box-form">
+    <div class="modal-head">
+      <span class="modal-title">🔒 VPN Tunnel</span>
+      <button id="vpn-modal-close" class="modal-close">✕</button>
+    </div>
+    <div class="modal-body">
+
+      <div id="vpn-list" class="vpn-list"></div>
+      <p id="vpn-empty-hint" class="hint hidden">No saved tunnels yet. Add one below.</p>
+      <p id="vpn-os-warning" class="status-msg error hidden">
+        VPN tunnels only work when this panel runs on Windows (uses the built-in Windows VPN client).
+      </p>
+
+      <button id="vpn-new-btn" class="run-btn secondary-btn" type="button">
+        <span class="run-btn-icon">+</span>
+        <span class="run-btn-text">Add New Tunnel</span>
+      </button>
+
+      <div id="vpn-form" class="vpn-form hidden">
+        <input type="hidden" id="vpn-id">
+        <h3 id="vpn-form-title">New Tunnel</h3>
+
+        <div class="mode-switch" id="vpn-protocol-switch">
+          <button type="button" class="mode-btn active" data-protocol="pptp">PPTP</button>
+          <button type="button" class="mode-btn" data-protocol="l2tp">L2TP</button>
+        </div>
+
+        <label class="field">
+          <span>Tunnel Name</span>
+          <input type="text" id="vpn-name" placeholder="OfficeNetwork">
+        </label>
+
+        <label class="field">
+          <span>Server Address</span>
+          <input type="text" id="vpn-server" placeholder="203.0.113.10">
+        </label>
+
+        <div class="field-row">
+          <label class="field">
+            <span>Username</span>
+            <input type="text" id="vpn-username" placeholder="vpnuser">
+          </label>
+          <label class="field">
+            <span>Password</span>
+            <input type="text" id="vpn-password" placeholder="••••••••">
+          </label>
+        </div>
+
+                <label class="field" id="vpn-psk-field">
+          <span>Pre-shared Key (L2TP, optional)</span>
+          <input type="text" id="vpn-psk" placeholder="optional">
+        </label>
+
+        <label class="field">
+          <span>Remote Network(s) — CIDR, comma-separated</span>
+          <input type="text" id="vpn-networks" placeholder="192.168.50.0/24, 192.168.60.0/24">
+        </label>
+        <p class="hint">
+          Required to actually reach devices behind that router — PPTP/L2TP on Windows
+          never learns this automatically. Adds a route on Connect, removes it on Disconnect.
+        </p>
+
+        <div class="field-row">
+          <button id="vpn-save-btn" class="run-btn" type="button">
+            <span class="run-btn-text">Save Tunnel</span>
+          </button>
+          <button id="vpn-cancel-btn" class="run-btn secondary-btn" type="button">
+            <span class="run-btn-text">Cancel</span>
+          </button>
+        </div>
+      </div>
+
+      <p id="vpn-status-msg" class="status-msg"></p>
+    </div>
+  </div>
+</div>
+
+<div id="output-modal" class="modal hidden">
+  <div class="modal-box">
+    <div class="modal-head">
+      <span id="modal-ip" class="modal-ip"></span>
+      <button id="modal-close" class="modal-close">✕</button>
+    </div>
+    <pre id="modal-output" class="modal-output"></pre>
+  </div>
+</div>
+
+<script src="/static/script.js"></script>
+</body>
+</html>
